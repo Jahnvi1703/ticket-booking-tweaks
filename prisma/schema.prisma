@@ -1,0 +1,65 @@
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ORGANIZER
+  CUSTOMER
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique(map: "unq_email")
+  role      Role     @default(CUSTOMER)
+  password  String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  events  Event[]
+  tickets Ticket[]
+
+  @@map("users")
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  name        String
+  price       Int
+  totalSeats  Int      @default(100) @map("total_seats")
+  availSeats  Int      @default(100) @map("avail_seats")
+  organizerId Int      @map("organizer_id")
+  description String   @db.Text
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  organizer User @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+
+  tickets Ticket[]
+
+  // Indexes for faster lookups and sorted feeds
+  @@index([organizerId])
+  @@index([createdAt])
+  @@map("events")
+}
+
+model Ticket {
+  id         Int      @id @default(autoincrement())
+  name       String
+  price      Int
+  customerId Int      @map("customer_id")
+  eventId    Int      @map("event_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  customer User  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  event    Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  // Critical indexes for background queue and customer queries
+  @@index([eventId])
+  @@index([customerId, createdAt])
+  @@map("tickets")
+}
