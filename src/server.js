@@ -3,13 +3,19 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes.js";
 import eventRoutes from "./routes/event.routes.js";
 import { globalLimiter } from "./middlewares/rateLimiter.js";
-import leanTicketRoutes from "./routes/leanTicket.routes.js"
-import memoryTicketRoutes from "./routes/memoryTicket.routes.js"
+import leanTicketRoutes from "./routes/leanTicket.routes.js";
+import memoryTicketRoutes from "./routes/memoryTicket.routes.js";
 
 import "./lib/bullQueue.js";
 import "./lib/emailQueue.js";
 
 const app = express();
+
+// =============================================================================
+// PRODUCTION HTTP HYGIENE & PROTOCOL OPTIMIZATION
+// =============================================================================
+app.set("etag", false);        // Eliminates CPU hashing on outgoing responses
+app.disable("x-powered-by");   // Strips the "X-Powered-By: Express" header
 
 // 1. Reverse proxy configuration for Render deployment
 app.set("trust proxy", 1);
@@ -32,8 +38,8 @@ app.get("/", (req, res) => {
 // 4. Mount Route Modules
 app.use("/api/auth", authRoutes);
 app.use("/api/events", eventRoutes);
-app.use("/api/memoryTickets", memoryTicketRoutes );   // Optimized (Redis Lua + BullMQ)
-app.use("/api/leanTickets", leanTicketRoutes);  // Naive baseline (MySQL row-lock)
+app.use("/api/memoryTickets", memoryTicketRoutes); // Optimized (L1 + Redis Lua + BullMQ)
+app.use("/api/leanTickets", leanTicketRoutes);     // Naive baseline
 
 // 5. Fallback 404 Handler for Unmatched Routes
 app.use((req, res) => {
@@ -50,7 +56,11 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 7. Start Server Listener
-app.listen(PORT, () => {
+// 7. Start Server Listener & Align Proxy Keep-Alive Timeouts
+const server = app.listen(PORT, () => {
   console.log(`Server Running on http://localhost:${PORT}`);
 });
+
+// Node defaults to 5000ms; 65000ms prevents premature EOF resets behind Render's proxy
+server.keepAliveTimeout = 65000;
+server.headersTimeout = 66000;

@@ -16,7 +16,7 @@ router.post("/", requireAuth, restrictTo("CUSTOMER"), async (req, res) => {
     }
 
     // 1. Direct relational database transaction
-    const ticket = await prisma.$transaction(async (tx) => {
+    const ticket = await prisma.$transaction(async(tx) => {
       const updateResult = await tx.event.updateMany({
         where: { id: evnId, availSeats: { gt: 0 } },
         data: { availSeats: { decrement: 1 } },
@@ -33,15 +33,15 @@ router.post("/", requireAuth, restrictTo("CUSTOMER"), async (req, res) => {
 
       return await tx.ticket.create({
         data: {
-          name: event.name,
+          name: event.name, 
           price: event.price,
           customerId: req.user.id,
-          eventId: evnId,
+          eventId: evnId, 
         },
       });
     });
 
-    // Invalidate event cache
+    // Invalidate event cache 
     await redis.del("all_events");
 
     // 2. The Naive Flaw: Synchronous third-party email API call in the hot path
