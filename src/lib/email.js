@@ -5,9 +5,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // Background Task 1 Helper: Booking Confirmation Email
 export async function sendBookingEmail(toEmail, eventName) {
 
-  // Temporary benchmark mock: bypass Resend quota
-  // console.log(`[MOCK EMAIL] Simulating email to ${toEmail} for ${eventName}`);
-  // return { success: true };
+ if (process.env.SKIP_EMAILS === "true") {
+  console.log(`[SKIP_EMAILS] Skipping outbound email to ${toEmail} for ${eventName}`);
+  return { skipped: true };
+}
 
   try {
     const data = await resend.emails.send({
@@ -25,6 +26,11 @@ export async function sendBookingEmail(toEmail, eventName) {
 
 // Background Task 2 Helper: Event Update Email
 export async function sendEventUpdateEmail(toEmail, eventName) {
+
+  if (process.env.SKIP_EMAILS === "true") {
+  console.log(`[SKIP_EMAILS] Skipping outbound email to ${toEmail} for ${eventName}`);
+  return { skipped: true };
+}
 
   try {
     const data = await resend.emails.send({
