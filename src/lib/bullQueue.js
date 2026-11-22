@@ -62,7 +62,10 @@ export const ticketWorker = new Worker(
       }
     );
 
-    console.log(`[WORKER] Successfully persisted ticket for ${userEmail} (Event: ${eventId})`);
+    
+if (process.env.NODE_ENV !== "production") {
+  console.log(`[WORKER] Successfully persisted ticket for ${userEmail} (Event: ${eventId})`);
+}
 
     // 2. Dispatch asynchronous confirmation email without blocking
     try {
@@ -76,7 +79,7 @@ export const ticketWorker = new Worker(
   },
   {
     connection: workerRedis,
-    concurrency: 1,        // Sequential writes eliminate MySQL row-lock deadlocks
+    concurrency: 2,        // Sequential writes eliminate MySQL row-lock deadlocks
     lockDuration: 60000,   // Prevents lock expiry over remote network latency
     stalledInterval: 60000,
   }
