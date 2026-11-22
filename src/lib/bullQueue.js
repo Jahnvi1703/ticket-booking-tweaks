@@ -79,7 +79,7 @@ if (process.env.NODE_ENV !== "production") {
   },
   {
     connection: workerRedis,
-    concurrency: 2,        // Sequential writes eliminate MySQL row-lock deadlocks
+    concurrency: 1,        // Sequential writes eliminate MySQL row-lock deadlocks
     lockDuration: 60000,   // Prevents lock expiry over remote network latency
     stalledInterval: 60000,
   }
